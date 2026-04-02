@@ -8,7 +8,8 @@
 ## 使用方法
 
 ```bash
-cd /home/liangxz/scripts/rust/tngs_OneTubePrimerEvaluation
+git clone https://github.com/yi1873/multiPrimerEvaluation.git
+cd multiPrimerEvaluation
 cargo build --release
 
 ./target/release/multiPrimerEvaluation -h
