@@ -53,3 +53,21 @@ badness(Pa,Pb) = P × (2^len) / ((d1+1) × (d2+1))
 - **中风险**：3 ≤ log10(badness) < 3.5
 - **低风险**：log10(badness) < 3
 
+### 参考文献 【思路来源，实现逻辑有加权处理】
+
+- Xie NG, Wang MX, Song P, Mao S, Wang Y, Yang Y, Luo J, Ren S, Zhang DY. Designing highly multiplex PCR primer sets with Simulated Annealing Design using Dimer Likelihood Estimation (SADDLE). Nat Commun. 2022 Apr 11;13(1):1881. doi: 10.1038/s41467-022-29500-4. PMID: 35410464; PMCID: PMC9001684.
+
+## Citation 📚
+
+If you use this tool in your research, please cite:
+
+```bibtex
+@software{multiPrimerEvaluation,
+  title = {multiPrimerEvaluation: High-performance primer badness evaluation in Rust},
+  author = {Liang Xiangzhi},
+  year = {2026},
+  url = {https://github.com/yi1873/multiPrimerEvaluation}
+}
+```
+
+
