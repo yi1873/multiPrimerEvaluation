@@ -14,6 +14,7 @@ cd multiPrimerEvaluation
 cargo build --release
 
 ./target/release/multiPrimerEvaluation -h
+## v0.2.0版本 支持多线程并行处理，默认4线程
 
 ## input: primer.tsv
 ./target/release/multiPrimerEvaluation -i test/primer.tsv -o test/primer.badnessDisk.inOneTube.tsv
