@@ -7,3 +7,4 @@ edition = "2024"
 clap = { version = "4.0", features = ["derive"] }
 itertools = "0.12.0"
 anyhow = "1.0"
+rayon = "1.10"
