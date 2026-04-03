@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use anyhow::{Result, Context};
+use rayon::ThreadPoolBuilder;
 
 
 #[derive(Parser, Debug)]
@@ -24,6 +25,10 @@ struct Args {
     /// Badness threshold (only output pairs with badness > threshold)
     #[arg(short, long, default_value_t = 10.0)]
     threshold: f64,
+    
+    /// Number of threads for parallel processing (must be ≥1)
+    #[arg(short = 'T', long, default_value_t = 4)]
+    threads: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -469,6 +474,72 @@ fn evaluate_primer_pairs(
     results
 }
 
+/// Evaluate all primer pairs in parallel using Rayon
+fn evaluate_primer_pairs_parallel(
+    primers: &[Primer],
+    max_mismatches: u32,
+    badness_threshold: f64,
+) -> Vec<PrimerPairResult> {
+    use rayon::prelude::*;
+    
+    let num_primers = primers.len();
+    
+    // Process combinations in parallel without storing all indices
+    let results: Vec<Option<PrimerPairResult>> = (0..num_primers)
+        .into_par_iter()
+        .flat_map_iter(|i| {
+            (i + 1..num_primers).map(move |j| (i, j))
+        })
+        .map(|(i, j)| {
+            let primer1 = &primers[i];
+            let primer2 = &primers[j];
+            
+            // Get reverse complement of primer2
+            let rc_primer2 = reverse_complement(&primer2.sequence);
+            
+            // Find longest common substring
+            let alignment = if max_mismatches == 0 {
+                find_exact_longest_common_substring(&primer1.sequence, &rc_primer2)
+            } else {
+                find_longest_common_substring_with_mismatches(
+                    &primer1.sequence,
+                    &rc_primer2,
+                    max_mismatches,
+                )
+            };
+            
+            alignment.and_then(|alignment| {
+                // Only consider alignments with length > 0
+                if alignment.length > 0 {
+                    let badness = calculate_badness(&alignment);
+                    
+                    // Filter by threshold
+                    if badness > badness_threshold {
+                        Some(PrimerPairResult {
+                            primer1_seq: primer1.sequence.clone(),
+                            primer2_seq: primer2.sequence.clone(),
+                            primer1_id: primer1.id.clone(),
+                            primer2_id: primer2.id.clone(),
+                            alignment,
+                            badness,
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
+    
+    // Filter out None values and sort by badness (descending)
+    let mut results: Vec<PrimerPairResult> = results.into_iter().flatten().collect();
+    results.sort_by(|a, b| b.badness.partial_cmp(&a.badness).unwrap());
+    
+    results
+}
+
 /// Write results to output file
 fn write_results(output_path: &PathBuf, results: &[PrimerPairResult]) -> Result<()> {
     use std::fs::File;
@@ -491,9 +562,21 @@ fn write_results(output_path: &PathBuf, results: &[PrimerPairResult]) -> Result<
 fn main() -> Result<()> {
     let args = Args::parse();
     
+    // Validate thread count
+    if args.threads == 0 {
+        anyhow::bail!("Thread count must be at least 1");
+    }
+    
     println!("Input file: {:?}", args.input);
     println!("Mismatch threshold: {}", args.mismatch);
     println!("Badness threshold: {}", args.threshold);
+    
+    // Set number of threads for Rayon
+    ThreadPoolBuilder::new()
+        .num_threads(args.threads)
+        .build_global()
+        .expect("Failed to initialize thread pool");
+    println!("Using {} threads for parallel processing", args.threads);
     
     // Read primers
     let primers = read_primers(&args.input)
@@ -514,7 +597,7 @@ fn main() -> Result<()> {
     
     // Evaluate primer pairs
     println!("Evaluating primer pairs...");
-    let results = evaluate_primer_pairs(&primers, args.mismatch, args.threshold);
+    let results = evaluate_primer_pairs_parallel(&primers, args.mismatch, args.threshold);
     println!("Found {} primer pairs with badness > {}", results.len(), args.threshold);
     
     // Write results
