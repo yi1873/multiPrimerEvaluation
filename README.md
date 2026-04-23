@@ -17,9 +17,9 @@ cargo build --release
 ## v0.2.0版本 支持多线程并行处理，默认4线程
 
 ## input: primer.tsv
-./target/release/multiPrimerEvaluation -i test/primer.tsv -o test/primer.badnessDisk.inOneTube.tsv
+./target/release/multiPrimerEvaluation -i test/primer.tsv -o test/primer.badnessRisk.inOneTube.tsv
 ## input: primer.fa
-./target/release/multiPrimerEvaluation -i test/primer.fa  -o test/primer.badnessDisk.inOneTube.tsv 
+./target/release/multiPrimerEvaluation -i test/primer.fa  -o test/primer.badnessRisk.inOneTube.tsv 
 ```
 
 ## 项目简介
